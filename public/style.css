@@ -1,0 +1,148 @@
+:root {
+  --bg: #0f1420;
+  --panel: #161c2b;
+  --panel-2: #1c2336;
+  --border: #27304a;
+  --text: #e6e9f2;
+  --muted: #8b93a9;
+  --accent: #6cb6ff;
+  --accent-2: #7fd8a0;
+  --warn: #f5b971;
+  --danger: #f07b7b;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  display: flex;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+#sidebar {
+  width: 340px;
+  min-width: 340px;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#sidebar header h1 { margin: 0; font-size: 18px; }
+#sidebar header .subtitle { color: var(--muted); font-size: 12px; }
+
+#sidebar h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 6px; }
+
+#sidebar section { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+
+.status div { font-size: 13px; padding: 2px 0; color: var(--muted); }
+.status strong { color: var(--text); font-weight: 500; }
+
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 4px 0; cursor: pointer; }
+.toggle input { accent-color: var(--accent); }
+
+button {
+  background: var(--accent);
+  color: #0b1220;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+}
+button:hover { filter: brightness(1.1); }
+
+input[type="search"], input[type="text"] {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  margin: 6px 0;
+}
+
+.tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.tab {
+  flex: 1;
+  background: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-weight: 500;
+  padding: 6px 4px;
+  font-size: 12px;
+}
+.tab.active { background: var(--panel); color: var(--text); border-color: var(--accent); }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+.list { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
+.list li {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  cursor: pointer;
+}
+.list li:hover { background: rgba(255,255,255,0.03); }
+.list li.active { background: rgba(108,182,255,0.12); }
+.list .muted { color: var(--muted); font-size: 12px; }
+.list .pill {
+  display: inline-block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-right: 6px;
+}
+.list .delay-pos { color: var(--danger); }
+.list .delay-neg { color: var(--accent-2); }
+
+.hint { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+
+footer { margin-top: auto; color: var(--muted); font-size: 11px; }
+footer a { color: var(--accent); }
+
+#map { flex: 1; height: 100vh; background: #000; }
+
+/* Leaflet tweaks */
+.leaflet-container { background: #0a0e18; }
+.leaflet-popup-content-wrapper { background: var(--panel); color: var(--text); border-radius: 8px; }
+.leaflet-popup-tip { background: var(--panel); }
+.leaflet-popup-content { margin: 10px 12px; font-size: 13px; line-height: 1.4; }
+.leaflet-popup-content strong { color: var(--accent); }
+
+.vehicle-marker {
+  width: 22px;
+  height: 22px;
+  transform: translate(-11px, -11px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vehicle-marker .arrow {
+  width: 0; height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 14px solid currentColor;
+  transform-origin: 50% 70%;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,.7));
+}
+
+@media (max-width: 720px) {
+  body { flex-direction: column; }
+  #sidebar { width: 100%; min-width: 0; height: auto; max-height: 45vh; border-right: 0; border-bottom: 1px solid var(--border); }
+  #map { height: 55vh; }
+}
