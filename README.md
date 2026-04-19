@@ -36,9 +36,12 @@ The Worker is ~40 lines and just passes the allow-listed paths through to
 per day.
 
 1. Go to <https://dash.cloudflare.com/> and sign up if you haven't (no card needed).
-2. **Workers & Pages → Create → Create Worker**, give it a name, deploy the default hello-world.
-3. Click **Edit code**, replace everything with the contents of
-   [`worker/gtfs-proxy.js`](worker/gtfs-proxy.js), **Save and deploy**.
+2. **Workers & Pages → Create → Start with Hello World → Deploy**. This gives
+   you a `*.workers.dev` URL. (Don't use the drag-and-drop uploader — it
+   rejects single-file workers as "needs a build".)
+3. Open the new worker, click **Edit code**, replace the editor contents with
+   the whole of [`worker/gtfs-proxy.js`](worker/gtfs-proxy.js), then
+   **Deploy**.
 4. Copy the worker URL (e.g. `https://gtfs-proxy.yourname.workers.dev`).
 
 ### 3. Point the app at the proxy
