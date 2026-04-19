@@ -16,6 +16,25 @@
       <div class="subtitle">Live vehicles, trip updates &amp; service alerts</div>
     </header>
 
+    <section id="setup-panel" class="setup hidden">
+      <h2>One-time setup</h2>
+      <p class="hint">
+        The upstream GTFS API doesn't send CORS headers, so this page needs a
+        proxy. The free option is a Cloudflare Worker (100k req/day, no card).
+      </p>
+      <ol class="hint small">
+        <li>Open <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener">dash.cloudflare.com</a> and sign up if needed.</li>
+        <li>Workers &amp; Pages → Create → Worker.</li>
+        <li>Paste the contents of <a href="worker/gtfs-proxy.js" target="_blank">worker/gtfs-proxy.js</a>, then Deploy.</li>
+        <li>Copy the <code>*.workers.dev</code> URL into the field below.</li>
+      </ol>
+      <label class="field">Proxy base URL
+        <input type="url" id="proxy-url" placeholder="https://your-worker.workers.dev" />
+      </label>
+      <button id="save-proxy">Save</button>
+      <div id="proxy-status" class="hint"></div>
+    </section>
+
     <section class="status">
       <div><strong>Vehicles:</strong> <span id="stat-vehicles">–</span></div>
       <div><strong>Feed time:</strong> <span id="stat-feed-time">–</span></div>
@@ -26,12 +45,13 @@
     <section>
       <label class="toggle"><input type="checkbox" id="auto-refresh" checked /> Auto-refresh (15s)</label>
       <button id="refresh-now">Refresh now</button>
+      <button id="open-settings" class="secondary">Settings</button>
     </section>
 
     <section>
       <h2>Filter</h2>
       <input type="search" id="filter-route" placeholder="Route (e.g. 202, BTANIC)" autocomplete="off" />
-      <label class="toggle"><input type="checkbox" id="layer-stops" /> Show stops</label>
+      <label class="toggle"><input type="checkbox" id="layer-stops" /> Show stops (loads static zip)</label>
       <label class="toggle"><input type="checkbox" id="layer-shapes" /> Show route shape</label>
     </section>
 
@@ -66,6 +86,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
           crossorigin=""></script>
+  <script src="https://unpkg.com/protobufjs@7.4.0/dist/protobuf.min.js"></script>
+  <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

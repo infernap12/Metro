@@ -1,62 +1,78 @@
 # Adelaide Metro GTFS Explorer
 
-A visualisation tool for the [Adelaide Metro GTFS + GTFS-realtime API](https://gtfs.adelaidemetro.com.au/).
+A **client-only** visualisation tool for the [Adelaide Metro GTFS + GTFS-realtime API](https://gtfs.adelaidemetro.com.au/).
 
-It runs a small Node proxy that:
+- Live vehicle markers on a Leaflet map (arrow = heading, colour = `route_color`), auto-refreshing every 15 s.
+- Routes panel sorted by live vehicle count — click to filter.
+- Trip updates sorted by biggest delay.
+- Service alerts with affected routes.
+- Optional stops + per-route shape overlays (pulled from the static GTFS zip).
 
-- Downloads and decodes the GTFS-realtime protobuf feeds
-  (vehicle positions, trip updates, service alerts).
-- Caches and parses the static GTFS zip (routes, stops, shapes, trips) on demand.
+Everything runs in the browser: GTFS-realtime protobuf is decoded with
+[protobuf.js] against the standard `gtfs-realtime.proto`, and the static zip is
+unpacked with [JSZip]. No backend of your own is required — but the upstream
+API does not send CORS headers, so the browser needs a tiny pass-through proxy
+in front of it.
 
-…and serves a Leaflet-based UI with:
+[protobuf.js]: https://github.com/protobufjs/protobuf.js
+[JSZip]: https://stuk.github.io/jszip/
 
-- Live vehicle markers (arrow shows bearing, colour comes from `route_color` where
-  available, otherwise hashed from `route_id`) that update every 15 seconds.
-- A route list sorted by live vehicle count — click a route to filter the map.
-- A trip-updates panel sorted by largest delay.
-- A service-alerts panel with affected routes.
-- Optional stops layer and per-route shape overlay from the static feed.
+## Deploy
 
-The upstream API does not send CORS headers, so a server-side proxy is required;
-everything else is plain static HTML/CSS/JS with Leaflet from a CDN.
+### 1. Host the static site (GitHub Pages)
 
-## Run
+1. Push this branch to GitHub.
+2. Repo → Settings → Pages → **Source: Deploy from a branch**,
+   pick this branch and **/ (root)**. Save.
+3. Wait ~30 s. You'll get a `https://<user>.github.io/<repo>/` URL.
 
-Requires Node 18+.
+Any other static host works too (Cloudflare Pages, Netlify, Vercel, `python -m
+http.server`, …).
+
+### 2. Deploy the proxy (Cloudflare Worker, free)
+
+The Worker is ~40 lines and just passes the allow-listed paths through to
+`gtfs.adelaidemetro.com.au` with CORS headers. Free tier is 100,000 requests
+per day.
+
+1. Go to <https://dash.cloudflare.com/> and sign up if you haven't (no card needed).
+2. **Workers & Pages → Create → Create Worker**, give it a name, deploy the default hello-world.
+3. Click **Edit code**, replace everything with the contents of
+   [`worker/gtfs-proxy.js`](worker/gtfs-proxy.js), **Save and deploy**.
+4. Copy the worker URL (e.g. `https://gtfs-proxy.yourname.workers.dev`).
+
+### 3. Point the app at the proxy
+
+Open the GitHub Pages URL. On first load you'll see a setup panel — paste the
+worker URL and hit **Save**. The setting is stored in `localStorage`. You can
+change it later via the **Settings** button.
+
+## Run locally
+
+No build step; any static file server works:
 
 ```bash
-npm install
-npm start
+python3 -m http.server 8000
+# or
+npx serve .
 ```
 
-Then open <http://localhost:3000>.
+Then open <http://localhost:8000>. You still need a proxy URL pointed at the
+upstream API — deploy the Worker as above and paste the URL.
 
-Set `PORT` to override the port:
+## Files
 
-```bash
-PORT=8080 npm start
-```
-
-## API the proxy exposes
-
-| Path | Description |
+| Path | Purpose |
 | --- | --- |
-| `GET /api/vehicles` | Decoded vehicle positions feed (cached 10 s). |
-| `GET /api/trip-updates` | Decoded trip updates feed (cached 30 s), with each trip's max delay. |
-| `GET /api/alerts` | Decoded service alerts (cached 60 s). |
-| `GET /api/static/version` | Current `version.txt` from upstream. |
-| `GET /api/static/routes` | `routes.txt` parsed as JSON. |
-| `GET /api/static/stops` | `stops.txt` parsed and coerced to numbers. |
-| `GET /api/static/shapes/:routeId` | All shapes for any trip using `routeId`. |
-| `GET /api/health` | Cache status. |
-
-The static GTFS zip is downloaded on first use and kept in memory; a new
-`version.txt` value triggers a refresh.
+| `index.html`, `app.js`, `style.css` | Single-page frontend. |
+| `gtfs-realtime.proto` | Standard GTFS-realtime proto (loaded at runtime, same-origin). |
+| `worker/gtfs-proxy.js` | Cloudflare Worker script — paste into the CF dashboard. |
 
 ## Notes
 
-- Only the standard GTFS-realtime protobuf fields are decoded. Adelaide Metro's
-  `tfnsw_vehicle_descriptor` extension (air conditioning, wheelchair access) is
-  ignored; add the custom `.proto` if you need those fields.
-- `route_id` values include numeric bus routes (`202`), train lines, and
-  lettered services like `BTANIC`.
+- Adelaide Metro's `tfnsw_vehicle_descriptor` protobuf extension (air
+  conditioning, wheelchair access) is not decoded; the standard proto only.
+- The static GTFS zip is only downloaded the first time you enable the stops
+  or shape overlay, and re-downloaded when `version.txt` changes.
+- The Worker allow-lists only the upstream GTFS paths, so it can't be used as
+  a general-purpose open proxy.

@@ -60,6 +60,18 @@ button {
   font-weight: 600;
 }
 button:hover { filter: brightness(1.1); }
+button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+
+.hidden { display: none !important; }
+
+.setup { background: #1a2540 !important; border-color: #2a3a66 !important; }
+.setup ol { padding-left: 20px; margin: 6px 0; }
+.setup ol li { margin: 3px 0; }
+.setup .small { font-size: 11px; }
+.setup .field { display: block; font-size: 12px; color: var(--muted); margin-top: 8px; }
+.setup code { background: var(--bg); padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+.hint.ok { color: var(--accent-2); }
+.hint.err { color: var(--danger); }
 
 input[type="search"], input[type="text"] {
   width: 100%;
