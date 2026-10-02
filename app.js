@@ -165,6 +165,27 @@ function routeLabel(routeId) {
   return routeId;
 }
 
+// Match typed text against route id, short name (the number on the bus) and long name.
+function routeMatches(routeId, filter) {
+  if (!filter) return true;
+  if (!routeId) return false;
+  const r = state.routes.get(routeId);
+  return [routeId, r?.route_short_name, r?.route_long_name]
+    .some(f => f && f.toUpperCase().includes(filter));
+}
+
+// Exact match on id or short name, so partial typing ("20" on the way to "202") selects nothing.
+function exactRoute(text) {
+  const t = text.trim().toUpperCase();
+  if (!t) return null;
+  for (const id of state.vehicles.map(v => v.routeId).concat([...state.routes.keys()])) {
+    if (!id) continue;
+    const r = state.routes.get(id);
+    if (id.toUpperCase() === t || (r?.route_short_name || "").toUpperCase() === t) return id;
+  }
+  return null;
+}
+
 // --- rendering ---------------------------------------------------------------
 
 function vehicleIcon(v) {
@@ -194,7 +215,7 @@ function renderVehicles() {
   const seen = new Set();
   let visible = 0;
   for (const v of state.vehicles) {
-    if (filter && !(v.routeId || "").toUpperCase().includes(filter)) continue;
+    if (!routeMatches(v.routeId, filter)) continue;
     visible++;
     seen.add(v.id);
     const existing = state.markerByVehicle.get(v.id);
@@ -225,7 +246,11 @@ function renderRouteList() {
     if (!v.routeId) continue;
     counts.set(v.routeId, (counts.get(v.routeId) || 0) + 1);
   }
-  const entries = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  const filter = state.filterRoute.trim().toUpperCase();
+  const exact = exactRoute(state.filterRoute);
+  const entries = Array.from(counts.entries())
+    .filter(([rid]) => routeMatches(rid, filter))
+    .sort((a, b) => (b[0] === exact) - (a[0] === exact) || b[1] - a[1]);
   const ul = document.getElementById("route-list");
   ul.innerHTML = entries.map(([rid, n]) => {
     const r = state.routes.get(rid);
@@ -237,7 +262,7 @@ function renderRouteList() {
       <span>${n} vehicle${n === 1 ? "" : "s"}</span>
       ${name ? `<div class="muted">${name}</div>` : ""}
     </li>`;
-  }).join("") || '<li class="muted">No live vehicles.</li>';
+  }).join("") || `<li class="muted">${filter ? "No live vehicles match." : "No live vehicles."}</li>`;
 
   ul.querySelectorAll(".route-item").forEach(li => {
     li.addEventListener("click", () => {
@@ -445,7 +470,7 @@ async function loadShapes(routeId) {
 
 function maybeLoadShapes() {
   if (!document.getElementById("layer-shapes").checked) return;
-  const routeId = state.selectedRoute || state.filterRoute.trim();
+  const routeId = state.selectedRoute;
   if (!routeId) { shapeLayer.clearLayers(); state.shapesFor = null; return; }
   if (routeId === state.shapesFor) return;
   loadShapes(routeId);
@@ -497,7 +522,7 @@ document.getElementById("auto-refresh").addEventListener("change", scheduleRefre
 
 document.getElementById("filter-route").addEventListener("input", e => {
   state.filterRoute = e.target.value;
-  state.selectedRoute = state.filterRoute.trim() || null;
+  state.selectedRoute = exactRoute(state.filterRoute);
   renderVehicles();
   renderRouteList();
   maybeLoadShapes();
