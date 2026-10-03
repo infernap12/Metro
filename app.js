@@ -3,13 +3,25 @@
 // --- proxy config ------------------------------------------------------------
 
 const PROXY_KEY = "gtfs_proxy_url";
+// Built-in proxy, used unless the user has saved their own. The setup panel
+// only appears if neither the saved proxy nor this one answers.
+const DEFAULT_PROXY = "https://weathered-lab-a4df.james1-6.workers.dev";
 
-function getProxy() {
+// The proxy actually in use this session (chosen in boot()).
+let activeProxy = "";
+
+function savedProxy() {
   return (localStorage.getItem(PROXY_KEY) || "").replace(/\/+$/, "");
 }
 
+function getProxy() {
+  return activeProxy;
+}
+
 function setProxy(url) {
-  localStorage.setItem(PROXY_KEY, url.replace(/\/+$/, ""));
+  activeProxy = url.replace(/\/+$/, "");
+  if (activeProxy === DEFAULT_PROXY) localStorage.removeItem(PROXY_KEY);
+  else localStorage.setItem(PROXY_KEY, activeProxy);
 }
 
 function upstream(path) {
@@ -513,7 +525,8 @@ document.getElementById("save-proxy").addEventListener("click", async () => {
 });
 
 document.getElementById("open-settings").addEventListener("click", () => {
-  document.getElementById("proxy-url").value = getProxy();
+  document.getElementById("proxy-url").value = getProxy() || DEFAULT_PROXY;
+  setStatus("");
   showSetup(true);
 });
 
@@ -585,8 +598,26 @@ async function refreshAll() {
 
 // --- boot --------------------------------------------------------------------
 
+async function pickProxy() {
+  const candidates = [...new Set([savedProxy(), DEFAULT_PROXY].filter(Boolean))];
+  for (const url of candidates) {
+    try { await testProxy(url); return url; }
+    catch (err) { console.warn(`Proxy ${url} failed:`, err.message); }
+  }
+  return "";
+}
+
 async function boot() {
-  if (!getProxy()) { showSetup(true); return; }
+  if (!activeProxy) {
+    activeProxy = await pickProxy();
+    if (!activeProxy) {
+      document.getElementById("proxy-url").value = savedProxy();
+      showSetup(true);
+      setStatus("The built-in proxy isn't responding. Enter your own below.", "err");
+      return;
+    }
+    setStatus("");
+  }
   showSetup(false);
   // Routes index is nice-to-have; failures shouldn't block live vehicles.
   loadRoutesIndex().catch(() => {});
