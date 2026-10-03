@@ -119,6 +119,20 @@ input[type="search"], input[type="text"] {
   color: var(--muted);
   margin-right: 6px;
 }
+.list .star {
+  background: none;
+  border: 0;
+  padding: 0 4px 0 0;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--muted);
+  font-weight: normal;
+  vertical-align: -1px;
+}
+.list .star.on { color: var(--warn); }
+.list .star:hover { color: var(--warn); filter: none; }
+.list li.idle > span:not(.pill) { color: var(--muted); }
+.list li.star-sep { border-bottom: 2px solid var(--border); }
 .list .delay-pos { color: var(--danger); }
 .list .delay-neg { color: var(--accent-2); }
 

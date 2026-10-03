@@ -252,31 +252,67 @@ function renderVehicles() {
     `${visible}${filter ? ` (of ${state.vehicles.length})` : ""}`;
 }
 
+// --- starred routes (per browser, localStorage) ------------------------------
+
+const STARS_KEY = "starred_routes";
+
+function loadStars() {
+  try { return new Set(JSON.parse(localStorage.getItem(STARS_KEY) || "[]")); }
+  catch { return new Set(); }
+}
+
+const starred = loadStars();
+
+function toggleStar(rid) {
+  if (starred.has(rid)) starred.delete(rid); else starred.add(rid);
+  try { localStorage.setItem(STARS_KEY, JSON.stringify([...starred])); } catch {}
+}
+
 function renderRouteList() {
   const counts = new Map();
   for (const v of state.vehicles) {
     if (!v.routeId) continue;
     counts.set(v.routeId, (counts.get(v.routeId) || 0) + 1);
   }
+  // Starred routes stay listed even with no live vehicles, so you can see
+  // at a glance that they aren't running.
+  for (const rid of starred) if (!counts.has(rid)) counts.set(rid, 0);
+
   const filter = state.filterRoute.trim().toUpperCase();
   const exact = exactRoute(state.filterRoute);
+  // Order: exact filter match, then starred, then by live vehicle count.
   const entries = Array.from(counts.entries())
     .filter(([rid]) => routeMatches(rid, filter))
-    .sort((a, b) => (b[0] === exact) - (a[0] === exact) || b[1] - a[1]);
+    .sort((a, b) =>
+      (b[0] === exact) - (a[0] === exact) ||
+      starred.has(b[0]) - starred.has(a[0]) ||
+      b[1] - a[1]);
+  const lastStarred = entries.findLastIndex(([rid]) => starred.has(rid));
+
   const ul = document.getElementById("route-list");
-  ul.innerHTML = entries.map(([rid, n]) => {
+  ul.innerHTML = entries.map(([rid, n], i) => {
     const r = state.routes.get(rid);
     const name = r?.route_long_name || "";
-    const active = state.selectedRoute === rid ? " active" : "";
+    const isStar = starred.has(rid);
+    const cls = ["route-item"];
+    if (state.selectedRoute === rid) cls.push("active");
+    if (n === 0) cls.push("idle");
+    if (i === lastStarred && i < entries.length - 1) cls.push("star-sep");
     const c = routeColor(rid);
-    return `<li class="route-item${active}" data-route="${rid}">
+    return `<li class="${cls.join(" ")}" data-route="${rid}">
+      <button class="star${isStar ? " on" : ""}" title="${isStar ? "Unstar" : "Star"} route" aria-pressed="${isStar}">${isStar ? "★" : "☆"}</button>
       <span class="pill" style="color:${c}; border-color:${c}">${routeLabel(rid)}</span>
-      <span>${n} vehicle${n === 1 ? "" : "s"}</span>
+      <span>${n ? `${n} vehicle${n === 1 ? "" : "s"}` : "no live vehicles"}</span>
       ${name ? `<div class="muted">${name}</div>` : ""}
     </li>`;
   }).join("") || `<li class="muted">${filter ? "No live vehicles match." : "No live vehicles."}</li>`;
 
   ul.querySelectorAll(".route-item").forEach(li => {
+    li.querySelector(".star").addEventListener("click", e => {
+      e.stopPropagation();
+      toggleStar(li.dataset.route);
+      renderRouteList();
+    });
     li.addEventListener("click", () => {
       const rid = li.dataset.route;
       const input = document.getElementById("filter-route");
